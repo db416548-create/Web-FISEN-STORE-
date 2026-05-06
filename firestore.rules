@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == "mayfisenchristmaabuat@gmail.com";
+    }
+
+    function isPartner() {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'customer') == 'partner';
+    }
+
+    // 1. Products: Public read, Admin write all, Partner write own
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isAdmin() || (isPartner() && request.resource.data.sellerId == request.auth.uid && request.resource.data.sellerType == 'partner');
+      allow update, delete: if isAdmin() || (isPartner() && resource.data.sellerId == request.auth.uid);
+    }
+
+    // 2. Keys: Admin manage all, Partner manage own, Guest read available for checkout
+    match /keys/{keyId} {
+      allow read: if isAdmin() || (isPartner() && resource.data.sellerId == request.auth.uid) || (resource.data.status == 'available');
+      allow create: if isAdmin() || (isPartner() && request.resource.data.sellerId == request.auth.uid);
+      allow update, delete: if isAdmin() || (isPartner() && resource.data.sellerId == request.auth.uid);
+    }
+
+    // 3. Transactions: Guest create, Admin read all, Partner read own
+    match /transactions/{transactionId} {
+      allow create: if true;
+      allow read: if isAdmin() || (isPartner() && resource.data.sellerId == request.auth.uid) || (isSignedIn() && resource.data.customerEmail == request.auth.token.email);
+    }
+
+    // 4. Reviews: Public read, User create own
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    // 5. Users: Self-read/create/update(limited), Admin manage all
+    match /users/{userId} {
+      allow get: if true; // Publicly get profile for seller name
+      allow list: if isAdmin() || (request.query.limit <= 100 && resource.data.get('role', '') == 'partner');
+      allow create: if isOwner(userId);
+      allow update: if isAdmin() || (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'balance']));
+      allow delete: if isAdmin();
+    }
+
+    // 6. Chat: Signed in read, write own
+    function isValidChatMessage(data) {
+      return data.userId == request.auth.uid &&
+             data.text is string && data.text.size() <= 1000 &&
+             data.createdAt == request.time;
+    }
+
+    match /chat/{messageId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidChatMessage(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // 7. Deposits: User create/read own, Admin manage all
+    match /deposits/{depositId} {
+      allow create: if isSignedIn();
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+  }
+}

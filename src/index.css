@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-brand-red: #00FF55;
+  --color-brand-green: #22C55E;
+  --color-neon-green: #00FF55;
+  --color-brand-black: #050505;
+  --color-neon-blue: #00F2FF;
+  --color-brand-orange: #FFFFFF;
+}
+
+@layer utilities {
+  .neon-glow-red {
+    text-shadow: 0 0 10px rgba(0, 255, 85, 0.5), 0 0 20px rgba(0, 255, 85, 0.3);
+  }
+  .neon-border-red {
+    box-shadow: 0 0 15px rgba(0, 255, 85, 0.2), inset 0 0 5px rgba(0, 255, 85, 0.1);
+  }
+  .neon-glow-green {
+    text-shadow: 0 0 10px rgba(0, 255, 85, 0.5), 0 0 20px rgba(0, 255, 85, 0.3);
+  }
+  .neon-border-green {
+    box-shadow: 0 0 15px rgba(0, 255, 85, 0.2), inset 0 0 5px rgba(0, 255, 85, 0.1);
+  }
+  .glass-morphism {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/10;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-brand-black text-white antialiased selection:bg-neon-green/30;
+    background-image: 
+      linear-gradient(rgba(0, 255, 85, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 255, 85, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+}
+
+.btn-primary {
+  @apply bg-neon-green text-black font-black uppercase tracking-widest px-8 py-4 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(0,255,85,0.4)] hover:shadow-[0_0_30px_rgba(0,255,85,0.6)];
+}
+
+.btn-outline {
+  @apply border-2 border-neon-green text-neon-green font-black uppercase tracking-widest px-8 py-4 rounded-2xl hover:bg-neon-green/10 transition-all;
+}
+
+.container-justified {
+  @apply max-w-7xl mx-auto px-4 text-justify leading-relaxed;
+}
